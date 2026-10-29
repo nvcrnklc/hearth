@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>I Love You</title>
+
+    <style>
+        /* Sayfanın genel görünümü */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #000;
+            color: #168cff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+        }
+
+        h1 {
+            font-size: clamp(22px, 5vw, 34px);
+            margin-bottom: 8px;
+            color: #168cff;
+            text-shadow: 0 0 15px #087cff;
+        }
+
+        p {
+            color: #7ebdff;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        /* Kalbin çizileceği alan */
+        canvas {
+            display: block;
+            width: min(94vw, 650px);
+            height: min(76vh, 650px);
+        }
+
+        /* Animasyonu yeniden başlatma butonu */
+        button {
+            padding: 11px 24px;
+            margin: 8px 0 20px;
+            border: 1px solid #168cff;
+            border-radius: 10px;
+            background: #061326;
+            color: #55aaff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #102b4d;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>I love you</h1>
+    <p>Biraz bekle...</p>
+
+    <canvas id="heart"></canvas>
+
+    <button id="restart">Tekrar izle</button>
+
+    <script>
+        // Canvas ve çizim alanını al.
+        const canvas = document.getElementById("heart");
+        const ctx = canvas.getContext("2d");
+        const restart = document.getElementById("restart");
+
+        // Python kodundaki değerleri koruyoruz.
+        const scales = [];
+
+        for (let scale = 11; scale < 17; scale++) {
+            scales.push(scale);
+        }
+
+        // Her yazının kalp üzerindeki konumunu hesapla.
+        const words = [];
+
+        for (const scale of scales) {
+            for (let i = 0; i < 120; i++) {
+
+                // Açıyı radyan cinsinden hesapla.
+                const angle = i * (Math.PI * 2) / 120;
+
+                // Python kodundaki kalp formülleri.
+                const x = 16 * Math.pow(Math.sin(angle), 3) * scale;
+
+                const y = (
+                    13 * Math.cos(angle)
+                    - 5 * Math.cos(2 * angle)
+                    - 2 * Math.cos(3 * angle)
+                    - Math.cos(4 * angle)
+                ) * scale;
+
+                words.push({ x, y });
+            }
+        }
+
+        let index = 0;
+        let animation = null;
+        let lastTime = 0;
+
+        // Ekran boyutuna göre çizimi ayarla.
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+
+            canvas.width = Math.round(rect.width * dpr);
+            canvas.height = Math.round(rect.height * dpr);
+
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            return {
+                width: rect.width,
+                height: rect.height
+            };
+        }
+
+        // Yazıları sırayla kalp şeklinde çiz.
+        function drawWord(point, width, height) {
+            const factor = Math.min(
+                (width - 24) / 540,
+                (height - 24) / 570
+            );
+
+            const x = width / 2 + point.x * factor;
+            const y = height / 2 - point.y * factor;
+
+            ctx.font = "bold 8px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            ctx.fillStyle = "#168cff";
+            ctx.shadowColor = "#168cff";
+            ctx.shadowBlur = 5;
+
+            ctx.fillText("I love you", x, y);
+
+            ctx.shadowBlur = 0;
+        }
+
+        // Animasyonu başlat.
+        function startAnimation() {
+            if (animation !== null) {
+                cancelAnimationFrame(animation);
+            }
+
+            index = 0;
+            lastTime = 0;
+
+            const size = resizeCanvas();
+
+            ctx.clearRect(0, 0, size.width, size.height);
+
+            function animate(timestamp) {
+                // Her 18 ms'de bir sonraki yazıyı çiz.
+                if (timestamp - lastTime >= 18) {
+                    lastTime = timestamp;
+
+                    if (index < words.length) {
+                        drawWord(
+                            words[index],
+                            size.width,
+                            size.height
+                        );
+
+                        index++;
+                    }
+                }
+
+                if (index < words.length) {
+                    animation = requestAnimationFrame(animate);
+                } else {
+                    animation = null;
+                }
+            }
+
+            animation = requestAnimationFrame(animate);
+        }
+
+        // Butona basınca animasyonu yeniden oynat.
+        restart.addEventListener("click", startAnimation);
+
+        // Sayfa açıldığında otomatik başlat.
+        window.addEventListener("load", startAnimation);
+    </script>
+
+</body>
+</html>
